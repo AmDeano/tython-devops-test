@@ -1,0 +1,45 @@
+# Vérifications locales — 2026-09-30 20:00
+
+## backend: lint + format + tests
+Checking formatting...
+All matched files use Prettier code style!
+✔ GET /health renvoie 200 et status ok (43.302ms)
+✔ GET /health/ready renvoie 503 si la base est indisponible (5.6827ms)
+✔ GET /health ajoute les headers de sécurité (helmet) (2.0777ms)
+✔ POST /api/messages valide le contenu (22.1224ms)
+✔ POST /api/messages crée un message (2.7698ms)
+✔ GET /metrics expose les métriques Prometheus (4.4962ms)
+ℹ tests 6
+ℹ pass 6
+ℹ fail 0
+
+## frontend: lint + format + build
+Checking formatting...
+All matched files use Prettier code style!
+dist/index.html                   0.47 kB │ gzip:  0.30 kB
+dist/assets/index-BZdLTbpU.css    0.59 kB │ gzip:  0.36 kB
+dist/assets/index-CGphiHyd.js   145.01 kB │ gzip: 46.79 kB
+✓ built in 560ms
+
+## docker compose ps (local + monitoring)
+SERVICE         STATUS                    PORTS
+backend         Up 9 minutes (healthy)    3000/tcp
+cadvisor        Up 10 minutes (healthy)   8080/tcp
+db              Up 10 minutes (healthy)   5432/tcp
+frontend        Up 9 minutes (healthy)    127.0.0.1:8088->8080/tcp
+grafana         Up 9 minutes              127.0.0.1:3001->3000/tcp
+node-exporter   Up 9 minutes              9100/tcp
+prometheus      Up 10 minutes             127.0.0.1:9090->9090/tcp
+
+## GET /health
+{"status":"ok","version":"local","uptime":585.937047861}
+## GET /api/messages
+[{"id":2,"content":"hello from local test","created_at":"2026-09-30T19:51:33.323Z"},{"id":1,"content":"Bienvenue sur Tython DevOps Demo 🚀","created_at":"2026-09-30T19:50:03.236Z"}]
+## GET /metrics depuis l'extérieur (doit être 404)
+404
+
+## Cibles Prometheus
+backend      up
+cadvisor     up
+node         up
+prometheus   up

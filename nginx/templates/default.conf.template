@@ -1,0 +1,61 @@
+# Reverse proxy de production. ${DOMAIN} est substitué au démarrage par l'image nginx (envsubst).
+
+# Rate limiting : 10 req/s par IP sur l'API (burst 20), 30 req/s sur le reste.
+limit_req_zone $binary_remote_addr zone=api_limit:10m rate=10r/s;
+limit_req_zone $binary_remote_addr zone=general_limit:10m rate=30r/s;
+limit_req_status 429;
+
+server_tokens off;
+
+upstream frontend_upstream {
+    server frontend:8080;
+}
+
+# --- HTTP : challenge ACME + redirection HTTPS ---
+server {
+    listen 80;
+    server_name ${DOMAIN};
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    location = /nginx-health {
+        access_log off;
+        return 200 "ok\n";
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+# --- HTTPS ---
+server {
+    listen 443 ssl;
+    http2 on;
+    server_name ${DOMAIN};
+
+    ssl_certificate     /etc/letsencrypt/live/${DOMAIN}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${DOMAIN}/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers off;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 1d;
+
+    client_max_body_size 1m;
+
+    include /etc/nginx/snippets/security-headers.conf;
+
+    location /api/ {
+        limit_req zone=api_limit burst=20 nodelay;
+        proxy_pass http://frontend_upstream;
+        include /etc/nginx/snippets/proxy.conf;
+    }
+
+    location / {
+        limit_req zone=general_limit burst=50 nodelay;
+        proxy_pass http://frontend_upstream;
+        include /etc/nginx/snippets/proxy.conf;
+    }
+}

@@ -1,0 +1,62 @@
+#cloud-config
+# Bootstrap de la VM Proxmox (Debian 12 / Ubuntu 24.04 cloud image).
+# Utilisé comme "cicustom" snippet par deploy/proxmox/create-vm.sh.
+# Remplacer la clé SSH ci-dessous par la clé publique de déploiement.
+
+hostname: tython-app
+timezone: Europe/Paris
+package_update: true
+package_upgrade: true
+
+users:
+  - name: deploy
+    groups: [sudo]
+    shell: /bin/bash
+    sudo: ['ALL=(ALL) NOPASSWD:ALL']
+    lock_passwd: true
+    ssh_authorized_keys:
+      - ssh-ed25519 AAAA...REMPLACER... deploy@tython
+
+packages:
+  - ca-certificates
+  - curl
+  - ufw
+  - fail2ban
+  - unattended-upgrades
+  - qemu-guest-agent
+
+write_files:
+  # Durcissement SSH : clé uniquement, pas de root.
+  - path: /etc/ssh/sshd_config.d/99-hardening.conf
+    content: |
+      PermitRootLogin no
+      PasswordAuthentication no
+      KbdInteractiveAuthentication no
+      MaxAuthTries 3
+  # Rotation des logs Docker au niveau du démon (défaut pour tous les conteneurs).
+  - path: /etc/docker/daemon.json
+    content: |
+      {
+        "log-driver": "json-file",
+        "log-opts": { "max-size": "10m", "max-file": "3" },
+        "live-restore": true
+      }
+
+runcmd:
+  # Docker Engine + plugin compose depuis le dépôt officiel.
+  - curl -fsSL https://get.docker.com | sh
+  - usermod -aG docker deploy
+  - systemctl enable --now docker qemu-guest-agent
+  # Pare-feu : SSH + HTTP/HTTPS uniquement.
+  # NB : Docker contourne UFW pour les ports publiés — d'où des ports DB/backend non publiés.
+  - ufw default deny incoming
+  - ufw default allow outgoing
+  - ufw allow 22/tcp
+  - ufw allow 80/tcp
+  - ufw allow 443/tcp
+  - ufw --force enable
+  - systemctl enable --now fail2ban
+  - mkdir -p /opt/tython && chown deploy:deploy /opt/tython
+  - systemctl restart ssh
+
+final_message: 'Tython VM prête après $UPTIME secondes'

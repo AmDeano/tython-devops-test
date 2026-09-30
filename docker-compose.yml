@@ -1,0 +1,65 @@
+# Environnement local : build des images depuis les sources.
+#   cp .env.example .env && docker compose up -d --build
+# Seul le frontend est publié sur l'hôte ; le backend et la base restent sur le réseau interne.
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: '10m'
+    max-file: '3'
+
+services:
+  db:
+    build: ./db
+    image: tython-db:local
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB manquant dans .env}
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER manquant dans .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD manquant dans .env}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks: [backend]
+    logging: *default-logging
+
+  backend:
+    build:
+      context: ./backend
+      args:
+        APP_VERSION: ${APP_VERSION:-local}
+    image: tython-backend:local
+    restart: unless-stopped
+    # Seules les variables nécessaires sont transmises (pas tout le .env).
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      APP_VERSION: ${APP_VERSION:-local}
+      PORT: 3000
+      POSTGRES_HOST: db
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks: [backend, frontend]
+    logging: *default-logging
+
+  frontend:
+    build: ./frontend
+    image: tython-frontend:local
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:${FRONTEND_PORT:-8080}:8080'
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks: [frontend]
+    logging: *default-logging
+
+volumes:
+  db-data:
+
+networks:
+  frontend:
+  backend:
+    internal: true

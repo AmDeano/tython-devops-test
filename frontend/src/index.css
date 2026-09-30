@@ -1,0 +1,67 @@
+:root {
+  font-family: system-ui, sans-serif;
+  color: #1f1f29;
+  background: #f6f4f8;
+}
+
+main {
+  max-width: 640px;
+  margin: 3rem auto;
+  padding: 0 1rem;
+}
+
+h1 {
+  color: #4b1a5e;
+}
+
+form {
+  display: flex;
+  gap: 0.5rem;
+  margin: 1.5rem 0;
+}
+
+input {
+  flex: 1;
+  padding: 0.6rem;
+  border: 1px solid #c9c2d1;
+  border-radius: 6px;
+}
+
+button {
+  padding: 0.6rem 1rem;
+  border: 0;
+  border-radius: 6px;
+  background: #4b1a5e;
+  color: #fff;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+ul {
+  list-style: none;
+  padding: 0;
+}
+
+li {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid #e3dee8;
+}
+
+time {
+  color: #77708a;
+  font-size: 0.85rem;
+}
+
+.ok {
+  color: #1b7f3b;
+}
+
+.ko {
+  color: #b3261e;
+}

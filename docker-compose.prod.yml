@@ -1,0 +1,117 @@
+# Production / staging sur la VM Proxmox : images pré-construites par la CI (GHCR).
+#   docker compose -f docker-compose.prod.yml pull
+#   docker compose -f docker-compose.prod.yml up -d
+#
+# Surface exposée : uniquement 80/443 via le reverse proxy nginx.
+# db et backend sont sur un réseau interne sans accès depuis l'hôte.
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: '10m'
+    max-file: '5'
+
+x-hardening: &hardening
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+
+services:
+  db:
+    image: ${IMAGE_REGISTRY:?IMAGE_REGISTRY manquant}/db:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?}
+      POSTGRES_USER: ${POSTGRES_USER:?}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks: [backend]
+    security_opt:
+      - no-new-privileges:true
+    logging: *default-logging
+
+  backend:
+    image: ${IMAGE_REGISTRY}/backend:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    <<: *hardening
+    read_only: true
+    environment:
+      NODE_ENV: production
+      APP_VERSION: ${IMAGE_TAG:-latest}
+      PORT: 3000
+      POSTGRES_HOST: db
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks: [backend, frontend]
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+    logging: *default-logging
+
+  frontend:
+    image: ${IMAGE_REGISTRY}/frontend:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    <<: *hardening
+    read_only: true
+    tmpfs:
+      - /tmp
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks: [frontend]
+    deploy:
+      resources:
+        limits:
+          memory: 128m
+    logging: *default-logging
+
+  # Reverse proxy public : TLS Let's Encrypt, headers de sécurité, rate limiting.
+  proxy:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+    environment:
+      DOMAIN: ${DOMAIN:?DOMAIN manquant}
+    volumes:
+      - ./nginx/templates:/etc/nginx/templates:ro
+      - ./nginx/snippets:/etc/nginx/snippets:ro
+      - certbot-conf:/etc/letsencrypt
+      - certbot-www:/var/www/certbot:ro
+    depends_on:
+      - frontend
+    networks: [frontend]
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://127.0.0.1/nginx-health || exit 1']
+      interval: 30s
+      timeout: 3s
+      retries: 3
+    logging: *default-logging
+
+  # Renouvellement automatique des certificats (toutes les 12h).
+  certbot:
+    image: certbot/certbot:latest
+    restart: unless-stopped
+    volumes:
+      - certbot-conf:/etc/letsencrypt
+      - certbot-www:/var/www/certbot
+    entrypoint: /bin/sh -c 'trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot --quiet; sleep 12h & wait $${!}; done'
+    logging: *default-logging
+
+volumes:
+  db-data:
+  certbot-conf:
+  certbot-www:
+
+networks:
+  frontend:
+  backend:
+    internal: true
