@@ -1,6 +1,6 @@
 # Tython DevOps Demo
 
-[![CI/CD](https://github.com/<github-user>/<repo>/actions/workflows/ci.yml/badge.svg)](https://github.com/<github-user>/<repo>/actions/workflows/ci.yml)
+[![CI/CD](https://github.com/AmDeano/tython-devops-test/actions/workflows/ci.yml/badge.svg)](https://github.com/AmDeano/tython-devops-test/actions/workflows/ci.yml)
 
 Chaîne DevOps complète **build → test → packaging → déploiement → monitoring** pour une application web minimale :
 

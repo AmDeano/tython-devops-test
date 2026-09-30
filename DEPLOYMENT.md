@@ -68,7 +68,7 @@ cat > .env <<'EOF'
 POSTGRES_DB=tython
 POSTGRES_USER=tython
 POSTGRES_PASSWORD=<openssl rand -hex 24>
-IMAGE_REGISTRY=ghcr.io/<github-user>/<repo>
+IMAGE_REGISTRY=ghcr.io/amdeano/tython-devops-test
 IMAGE_TAG=latest
 DOMAIN=app.example.com
 LETSENCRYPT_EMAIL=admin@example.com
@@ -86,7 +86,7 @@ chmod 600 .env
 export SSH_HOST=192.168.1.50 SSH_USER=deploy
 cp ~/.ssh/tython_deploy ~/.ssh/id_deploy        # deploy.sh utilise ~/.ssh/id_deploy s'il existe
 # Si les packages GHCR sont privés : token GitHub avec le scope read:packages
-export GHCR_USER=<github-user> GHCR_TOKEN=<token>
+export GHCR_USER=AmDeano GHCR_TOKEN=<token>
 
 IMAGE_TAG=latest ./deploy/deploy.sh             # copie compose/nginx/monitoring, pull, up --wait
 ssh deploy@$SSH_HOST 'cd /opt/tython && bash deploy/init-letsencrypt.sh'   # 1ʳᵉ fois : certificat HTTPS
