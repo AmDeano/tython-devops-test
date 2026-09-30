@@ -3,6 +3,7 @@ const { loadDbConfig } = require('./config');
 
 let pool;
 
+// pool wa7d l app kamla, kaytcrea ghir f awel query
 const getPool = () => {
   if (!pool) {
     pool = new Pool({ ...loadDbConfig(), max: 10, connectionTimeoutMillis: 3000 });

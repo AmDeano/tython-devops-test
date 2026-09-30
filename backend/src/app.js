@@ -3,23 +3,23 @@ const helmet = require('helmet');
 const config = require('./config');
 const { register, metricsMiddleware } = require('./metrics');
 
-// `db` est injectable pour permettre les tests sans PostgreSQL.
+// db kandkhloha mn bra bach f tests n3tiw fake db (ma n7tajoch postgres)
 const createApp = ({ db } = {}) => {
   const getPool = db ? () => db : require('./db').getPool;
   const app = express();
 
   app.disable('x-powered-by');
-  app.set('trust proxy', 1);
+  app.set('trust proxy', 1); // 7na mor nginx
   app.use(helmet());
   app.use(express.json({ limit: '100kb' }));
   app.use(metricsMiddleware);
 
-  // Liveness : le process répond.
+  // liveness : l process 7ay w kayjawb
   app.get('/health', (req, res) => {
     res.json({ status: 'ok', version: config.appVersion, uptime: process.uptime() });
   });
 
-  // Readiness : la base de données est joignable.
+  // readiness : wach db kat3awd
   app.get('/health/ready', async (req, res) => {
     try {
       await getPool().query('SELECT 1');
@@ -29,6 +29,7 @@ const createApp = ({ db } = {}) => {
     }
   });
 
+  // prometheus kayscrapi hna (ma khasoch ykon public, nginx kaybloquih)
   app.get('/metrics', async (req, res) => {
     res.set('Content-Type', register.contentType);
     res.end(await register.metrics());
@@ -51,6 +52,7 @@ const createApp = ({ db } = {}) => {
       return res.status(400).json({ error: 'content requis (1 à 280 caractères)' });
     }
     try {
+      // query parametrée => ma kaynch sql injection
       const { rows } = await getPool().query(
         'INSERT INTO messages (content) VALUES ($1) RETURNING id, content, created_at',
         [content],
@@ -63,6 +65,7 @@ const createApp = ({ db } = {}) => {
 
   app.use((req, res) => res.status(404).json({ error: 'Not found' }));
 
+  // ma nrj3och l stack trace l client, kanloggiwha 7na
   // eslint-disable-next-line no-unused-vars
   app.use((err, req, res, next) => {
     console.error(JSON.stringify({ level: 'error', msg: err.message, path: req.path }));

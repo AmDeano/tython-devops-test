@@ -1,31 +1,33 @@
 #!/usr/bin/env bash
-# shellcheck disable=SC1091  # .env est créé sur la VM, hors repo
-# À lancer UNE fois sur la VM (dans /opt/tython) avant le premier déploiement HTTPS.
-# nginx refuse de démarrer sans certificat : on crée un certificat auto-signé temporaire,
-# on démarre nginx, on obtient le vrai certificat via le challenge HTTP-01, puis on recharge.
+# shellcheck disable=SC1091  # .env kaytcrea f la VM, machi f repo
+# kanlanciwh MARRA WA7DA f la VM (f /opt/tython) 9bel awel deploy b https
+# nginx ma kaybghich ytl3 bla certificat, donc :
+#   1) ndiro certificat auto-signé mo2a9at
+#   2) nlanciw nginx
+#   3) njibo certificat s7i7 mn let's encrypt (challenge http-01) w n3awdo nchargiw nginx
 #
-# Pré-requis : DNS du domaine pointant vers l'IP publique, ports 80/443 redirigés vers la VM.
-# STAGING=1 pour tester contre l'environnement de test Let's Encrypt (pas de rate limit).
+# khass : DNS dyal domaine kaypointi 3la IP publique, w ports 80/443 m7wlin l la VM
+# STAGING=1 bach ntestiw m3a staging dyal let's encrypt (bla rate limit)
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 set -a; source .env; set +a
-: "${DOMAIN:?DOMAIN manquant dans .env}"
-: "${LETSENCRYPT_EMAIL:?LETSENCRYPT_EMAIL manquant dans .env}"
+: "${DOMAIN:?DOMAIN makaynch f .env}"
+: "${LETSENCRYPT_EMAIL:?LETSENCRYPT_EMAIL makaynch f .env}"
 
 COMPOSE=(docker compose --env-file .env -f docker-compose.prod.yml)
 LIVE="/etc/letsencrypt/live/$DOMAIN"
 
-echo "==> Certificat temporaire auto-signé pour $DOMAIN"
+echo "==> certificat auto-signé mo2a9at l $DOMAIN"
 "${COMPOSE[@]}" run --rm --entrypoint sh certbot -c "
   mkdir -p $LIVE &&
   [ -f $LIVE/fullchain.pem ] || openssl req -x509 -nodes -newkey rsa:2048 -days 1 \
     -keyout $LIVE/privkey.pem -out $LIVE/fullchain.pem -subj /CN=localhost"
 
-echo "==> Démarrage de nginx"
+echo "==> kanlanciw nginx"
 "${COMPOSE[@]}" up -d proxy
 
-echo "==> Suppression du certificat temporaire et demande Let's Encrypt"
+echo "==> kan7aydo lmo2a9at w kantlbo certificat mn let's encrypt"
 STAGING_FLAG=""
 [[ "${STAGING:-0}" == "1" ]] && STAGING_FLAG="--staging"
 "${COMPOSE[@]}" run --rm --entrypoint sh certbot -c "
@@ -33,6 +35,6 @@ STAGING_FLAG=""
   certbot certonly --webroot -w /var/www/certbot $STAGING_FLAG \
     -d $DOMAIN --email $LETSENCRYPT_EMAIL --agree-tos --no-eff-email --non-interactive"
 
-echo "==> Rechargement nginx"
+echo "==> reload dyal nginx"
 "${COMPOSE[@]}" exec proxy nginx -s reload
-echo "==> HTTPS actif sur https://$DOMAIN"
+echo "==> https khdam : https://$DOMAIN"

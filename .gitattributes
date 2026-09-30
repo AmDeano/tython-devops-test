@@ -1,4 +1,4 @@
-# Fins de ligne LF partout : indispensable pour les scripts shell exécutés sur la VM Linux.
+# LF f kolchi : scripts .sh ila kan fihom CRLF ma ykhdmoch f la VM linux
 * text=auto eol=lf
 *.png binary
 *.jpg binary

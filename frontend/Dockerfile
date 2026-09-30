@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-# ---- Étape 1 : build Vite ----
+# stage 1 : build dyal vite
 FROM node:22-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
@@ -8,7 +8,7 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
-# ---- Étape 2 : fichiers statiques servis par nginx non-root ----
+# stage 2 : ghir les fichiers statiques f nginx (version unprivileged = machi root)
 FROM nginxinc/nginx-unprivileged:1.27-alpine AS runtime
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/dist /usr/share/nginx/html

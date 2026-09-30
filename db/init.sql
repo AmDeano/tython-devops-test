@@ -1,4 +1,4 @@
--- Exécuté automatiquement par l'image postgres au premier démarrage (volume vide).
+-- postgres kaylanci had l fichier ghir f awel demarrage (mli l volume khawi)
 CREATE TABLE IF NOT EXISTS messages (
     id         SERIAL PRIMARY KEY,
     content    VARCHAR(280) NOT NULL,

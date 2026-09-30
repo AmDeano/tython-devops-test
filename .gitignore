@@ -1,4 +1,4 @@
-# Secrets
+# secrets (ma ytcommitaw 3mmer)
 .env
 .env.*
 !.env.example
@@ -17,8 +17,8 @@ frontend/dist/
 .DS_Store
 Thumbs.db
 
-# Déploiement
+# deploy
 .deployed_tag
 
-# Sujet du test (non versionné)
+# sujet dyal test
 *.pdf

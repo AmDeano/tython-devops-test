@@ -1,16 +1,17 @@
-# Production / staging sur la VM Proxmox : images pré-construites par la CI (GHCR).
+# prod / staging f la VM Proxmox : les images deja buildyin mn l CI (GHCR)
 #   docker compose -f docker-compose.prod.yml pull
 #   docker compose -f docker-compose.prod.yml up -d
 #
-# Surface exposée : uniquement 80/443 via le reverse proxy nginx.
-# db et backend sont sur un réseau interne sans accès depuis l'hôte.
+# ghir 80/443 li m7lolin (nginx). db w backend f reseau dakhli, ma kaytl3och 3la la machine
 
+# rotation dyal logs
 x-logging: &default-logging
   driver: json-file
   options:
     max-size: '10m'
     max-file: '5'
 
+# chwiya dyal hardening : bla capabilities w bla escalade dyal privileges
 x-hardening: &hardening
   security_opt:
     - no-new-privileges:true
@@ -19,7 +20,7 @@ x-hardening: &hardening
 
 services:
   db:
-    image: ${IMAGE_REGISTRY:?IMAGE_REGISTRY manquant}/db:${IMAGE_TAG:-latest}
+    image: ${IMAGE_REGISTRY:?IMAGE_REGISTRY makaynch}/db:${IMAGE_TAG:-latest}
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB:?}
@@ -28,6 +29,7 @@ services:
     volumes:
       - db-data:/var/lib/postgresql/data
     networks: [backend]
+    # postgres kay7taj chown f demarrage, donc ma dernach lih cap_drop ALL
     security_opt:
       - no-new-privileges:true
     logging: *default-logging
@@ -61,7 +63,7 @@ services:
     <<: *hardening
     read_only: true
     tmpfs:
-      - /tmp
+      - /tmp # nginx kaykteb pid w cache f /tmp
     depends_on:
       backend:
         condition: service_healthy
@@ -72,7 +74,7 @@ services:
           memory: 128m
     logging: *default-logging
 
-  # Reverse proxy public : TLS Let's Encrypt, headers de sécurité, rate limiting.
+  # l reverse proxy li kayban l bra : https (let's encrypt), headers, rate limit
   proxy:
     image: nginx:1.27-alpine
     restart: unless-stopped
@@ -80,7 +82,7 @@ services:
       - '80:80'
       - '443:443'
     environment:
-      DOMAIN: ${DOMAIN:?DOMAIN manquant}
+      DOMAIN: ${DOMAIN:?DOMAIN makaynch}
     volumes:
       - ./nginx/templates:/etc/nginx/templates:ro
       - ./nginx/snippets:/etc/nginx/snippets:ro
@@ -96,7 +98,7 @@ services:
       retries: 3
     logging: *default-logging
 
-  # Renouvellement automatique des certificats (toutes les 12h).
+  # kayjded les certificats bohdo (kol 12h kaychof)
   certbot:
     image: certbot/certbot:latest
     restart: unless-stopped

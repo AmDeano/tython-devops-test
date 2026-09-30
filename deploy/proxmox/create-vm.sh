@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
-# À exécuter sur le nœud Proxmox (shell root).
-# 1) crée un template cloud-init Debian 12 (une seule fois)
-# 2) clone le template en VM applicative, injecte réseau + user-data, démarre.
+# kaytlanca f node dyal Proxmox (b root)
+# 1) kaycrea template cloud-init dyal Debian 12 (marra wa7da)
+# 2) kayclonih VM jdida, kay7et reseau + user-data w kayt3alha
 #
-# Exemple :
+# exemple :
 #   VMID=110 NAME=tython-prod IP=192.168.1.50/24 GW=192.168.1.1 ./create-vm.sh
 set -euo pipefail
 
 TEMPLATE_ID="${TEMPLATE_ID:-9000}"
-VMID="${VMID:?VMID requis}"
+VMID="${VMID:?khass VMID}"
 NAME="${NAME:-tython-app}"
-IP="${IP:?IP requise (ex: 192.168.1.50/24)}"
-GW="${GW:?GW requise}"
+IP="${IP:?khass IP (ex: 192.168.1.50/24)}"
+GW="${GW:?khass GW}"
 STORAGE="${STORAGE:-local-lvm}"
 SNIPPETS_STORAGE="${SNIPPETS_STORAGE:-local}"
 BRIDGE="${BRIDGE:-vmbr0}"
@@ -22,8 +22,9 @@ IMAGE_URL="https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-gener
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# ila template deja kayn ma n3awdoch nsaybouh
 if ! qm status "$TEMPLATE_ID" &>/dev/null; then
-  echo "==> Création du template cloud-init $TEMPLATE_ID"
+  echo "==> kancreyiw template cloud-init $TEMPLATE_ID"
   wget -q -O /tmp/debian-12.qcow2 "$IMAGE_URL"
   qm create "$TEMPLATE_ID" --name debian12-cloudinit --memory 2048 --cores 2 \
     --net0 "virtio,bridge=$BRIDGE" --scsihw virtio-scsi-pci --agent enabled=1 \
@@ -35,12 +36,13 @@ if ! qm status "$TEMPLATE_ID" &>/dev/null; then
   rm -f /tmp/debian-12.qcow2
 fi
 
-echo "==> Copie du user-data cloud-init dans les snippets"
+# khass storage "local" ykon fih contenu Snippets m activé
+echo "==> kancopiw user-data dyal cloud-init f snippets"
 SNIPPETS_DIR="$(pvesm path "$SNIPPETS_STORAGE:snippets/x" | xargs dirname)"
 mkdir -p "$SNIPPETS_DIR"
 cp "$SCRIPT_DIR/../cloud-init/user-data.yml" "$SNIPPETS_DIR/tython-user-data.yml"
 
-echo "==> Clone $TEMPLATE_ID -> $VMID ($NAME)"
+echo "==> clone $TEMPLATE_ID -> $VMID ($NAME)"
 qm clone "$TEMPLATE_ID" "$VMID" --name "$NAME" --full true
 qm set "$VMID" --cores "$CORES" --memory "$MEMORY" \
   --ipconfig0 "ip=$IP,gw=$GW" \
@@ -49,5 +51,5 @@ qm set "$VMID" --cores "$CORES" --memory "$MEMORY" \
 qm resize "$VMID" scsi0 "$DISK"
 qm start "$VMID"
 
-echo "==> VM $VMID démarrée. Attendre ~2-3 min que cloud-init installe Docker :"
+echo "==> VM $VMID tl3at. tsna chi 2-3 min 7ta cloud-init ysali docker :"
 echo "    ssh deploy@${IP%/*} 'cloud-init status --wait && docker --version'"

@@ -6,6 +6,7 @@ export default function App() {
   const [content, setContent] = useState('');
   const [error, setError] = useState('');
 
+  // kanjibo akhir 50 message mn l API
   const loadMessages = async () => {
     try {
       const res = await fetch('/api/messages');
@@ -17,6 +18,7 @@ export default function App() {
     }
   };
 
+  // f awel render : status dyal backend + messages
   useEffect(() => {
     fetch('/health')
       .then((res) => res.json())

@@ -1,9 +1,9 @@
 name: CI/CD
 
-# - pull_request -> dev : lint + tests + build + build Docker (sans push)
-# - push -> main       : idem + push GHCR + déploiement production
-# - push -> dev        : idem + push GHCR + déploiement staging
-# - tag vX.Y.Z         : idem + images versionnées + GitHub Release
+# - PR l dev      : lint + tests + build + build docker (bla push)
+# - push f main   : nfs l7aja + push GHCR + deploy production
+# - push f dev    : nfs l7aja + push GHCR + deploy staging
+# - tag vX.Y.Z    : images b version + GitHub Release
 on:
   pull_request:
     branches: [dev]
@@ -12,6 +12,7 @@ on:
     tags: ['v*.*.*']
   workflow_dispatch:
 
+# f PR ila pushit commit jdid, kan7bso l pipeline l9dim
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -79,7 +80,7 @@ jobs:
           cache-dependency-path: ${{ matrix.app }}/package-lock.json
       - run: npm ci
       - run: npm run build
-      - name: Archive du build frontend
+      - name: nkhbiw build dyal frontend
         if: matrix.app == 'frontend'
         uses: actions/upload-artifact@v4
         with:
@@ -110,7 +111,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Tags & labels
+      - name: tags w labels dyal image
         id: meta
         uses: docker/metadata-action@v5
         with:
@@ -134,33 +135,35 @@ jobs:
           cache-from: type=gha,scope=${{ matrix.image }}
           cache-to: type=gha,mode=max,scope=${{ matrix.image }}
 
+  # kanlanciw stack kamla b compose w ntestiw l API 3la bssa7 (machi ghir build)
   smoke-test:
     name: Smoke test docker compose
     needs: [lint, test, build]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Préparer .env de test
+      - name: .env dyal test (password random)
         run: |
           cp .env.example .env
           sed -i "s/^POSTGRES_PASSWORD=.*/POSTGRES_PASSWORD=$(openssl rand -hex 16)/" .env
-      - name: Démarrer la stack
+      - name: nlanciw stack
         run: docker compose up -d --build --wait --wait-timeout 180
-      - name: Vérifier /health, /health/ready et l'API
+      - name: ntestiw /health, /health/ready w l API
         run: |
           curl -fsS http://127.0.0.1:8080/health
           docker compose exec -T backend wget -qO- http://127.0.0.1:3000/health/ready
           curl -fsS -X POST -H 'Content-Type: application/json' \
             -d '{"content":"hello from CI"}' http://127.0.0.1:8080/api/messages
           curl -fsS http://127.0.0.1:8080/api/messages | grep -q 'hello from CI'
-      - name: Logs en cas d'échec
+      - name: logs ila tfrga3
         if: failure()
         run: docker compose logs --no-color
-      - name: Nettoyage
+      - name: nnqiw
         if: always()
         run: docker compose down -v
 
-  # ----- CD (bonus) : activé seulement si la variable de repo DEPLOY_ENABLED=true -----
+  # ----- CD (bonus) : ma kaykhdem ghir ila DEPLOY_ENABLED=true f variables dyal repo -----
+  # hakka l pipeline kayb9a khder 7ta nconfiguriw serveur
   deploy:
     name: Déploiement ${{ github.ref_name == 'main' && 'production' || 'staging' }}
     needs: [docker, smoke-test]
@@ -178,7 +181,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Configurer SSH
+      - name: config dyal ssh
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
@@ -188,12 +191,12 @@ jobs:
           chmod 600 ~/.ssh/id_deploy
           echo "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
 
-      - name: Déployer via SSH + docker compose
+      - name: deploy b ssh + docker compose
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_PORT: ${{ secrets.SSH_PORT || '22' }}
-          IMAGE_TAG: sha-${{ github.sha }}
+          IMAGE_TAG: sha-${{ github.sha }} # tag immuable, kan3rfo chmen commit f prod
           GHCR_USER: ${{ github.actor }}
           GHCR_TOKEN: ${{ secrets.GHCR_READ_TOKEN }}
         run: ./deploy/deploy.sh

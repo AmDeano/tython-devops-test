@@ -7,7 +7,7 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: Le backend ne répond plus aux scrapes Prometheus
+          summary: backend ma bqach kayjawb prometheus
 
       - alert: HighErrorRate
         expr: |
@@ -17,7 +17,7 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: Plus de 5% de réponses 5xx sur le backend
+          summary: kter mn 5% dyal les reponses 5xx f backend
 
       - alert: HostDiskAlmostFull
         expr: (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) < 0.1
@@ -25,4 +25,4 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: Moins de 10% d'espace disque libre sur la VM
+          summary: b9a 9el mn 10% dyal disque khawi f la VM

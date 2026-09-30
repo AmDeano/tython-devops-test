@@ -1,40 +1,42 @@
 #!/usr/bin/env bash
-# Exécuté SUR la VM par deploy.sh. Pull des images, redémarrage propre, vérification
-# de santé et rollback automatique vers le tag précédent en cas d'échec.
+# had script kaytlanca F la VM (deploy.sh li kay3ayet lih)
+# pull dyal les images, up, kanchofo healthchecks, w ila tfrga3 chi 7aja nrj3o l version l9dima
 set -euo pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
-IMAGE_TAG="${IMAGE_TAG:?IMAGE_TAG requis}"
+IMAGE_TAG="${IMAGE_TAG:?khass IMAGE_TAG}"
 WITH_MONITORING="${WITH_MONITORING:-1}"
 
-[[ -f .env ]] || { echo "ERREUR : $(pwd)/.env absent (voir DEPLOYMENT.md)"; exit 1; }
+[[ -f .env ]] || { echo "ERREUR : makaynch $(pwd)/.env (chof DEPLOYMENT.md)"; exit 1; }
 chmod 600 .env
 
 COMPOSE=(docker compose --env-file .env -f docker-compose.prod.yml)
 [[ "$WITH_MONITORING" == "1" ]] && COMPOSE+=(-f docker-compose.monitoring.yml)
 
+# version li khdama daba, bach nrj3o liha ila tra chi mouchkil
 PREVIOUS_TAG="$(cat .deployed_tag 2>/dev/null || echo '')"
 
 deploy_tag() {
   export IMAGE_TAG="$1"
-  echo "==> Pull des images (tag $IMAGE_TAG)"
+  echo "==> pull dyal les images (tag $IMAGE_TAG)"
   "${COMPOSE[@]}" pull --quiet || return 1
   echo "==> docker compose up -d"
-  # --wait : attend que les healthchecks soient au vert (db, backend, frontend, proxy).
+  # --wait : kaytsna 7ta ykono ga3 les healthchecks khdrin (db, backend, frontend, proxy)
   "${COMPOSE[@]}" up -d --remove-orphans --wait --wait-timeout 180 || return 1
 }
 
 if deploy_tag "$IMAGE_TAG"; then
   echo "$IMAGE_TAG" > .deployed_tag
-  echo "==> Déploiement OK ($IMAGE_TAG)"
+  echo "==> deploy mzyan ($IMAGE_TAG)"
   "${COMPOSE[@]}" ps
+  # n7aydo les images l9dam (kter mn 7 iyam) bach ma y3mrch disque
   docker image prune -f --filter "until=168h" >/dev/null
 else
-  echo "!!! Échec du déploiement de $IMAGE_TAG"
+  echo "!!! deploy dyal $IMAGE_TAG tfrga3"
   "${COMPOSE[@]}" logs --tail 50 --no-color || true
   if [[ -n "$PREVIOUS_TAG" ]]; then
-    echo "==> Rollback vers $PREVIOUS_TAG"
+    echo "==> rollback l $PREVIOUS_TAG"
     deploy_tag "$PREVIOUS_TAG"
   fi
   exit 1

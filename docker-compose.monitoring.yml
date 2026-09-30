@@ -1,9 +1,9 @@
-# Monitoring léger, à superposer au compose local ou prod :
+# monitoring, kanzidoh fo9 compose dyal local wla prod :
 #   docker compose -f docker-compose.yml -f docker-compose.monitoring.yml up -d
 #   docker compose -f docker-compose.prod.yml -f docker-compose.monitoring.yml up -d
-# Grafana et Prometheus sont publiés sur 127.0.0.1 uniquement (accès via tunnel SSH en prod).
+# grafana w prometheus ghir 3la 127.0.0.1 (f prod kandkhlo b tunnel ssh)
 
-x-logging: &default-logging
+x-logging: &default-logging # rotation dyal logs
   driver: json-file
   options:
     max-size: '10m'
@@ -22,7 +22,7 @@ services:
       - prometheus-data:/prometheus
     ports:
       - '127.0.0.1:9090:9090'
-    # Réseau backend (interne) pour scraper le backend, monitoring pour les exporters.
+    # reseau backend bach yscrapi l backend, w monitoring dyal les exporters
     networks: [backend, monitoring]
     logging: *default-logging
 
@@ -31,7 +31,7 @@ services:
     restart: unless-stopped
     environment:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?GRAFANA_ADMIN_PASSWORD manquant}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?GRAFANA_ADMIN_PASSWORD makaynch}
       GF_USERS_ALLOW_SIGN_UP: 'false'
       GF_ANALYTICS_REPORTING_ENABLED: 'false'
     volumes:
@@ -52,14 +52,14 @@ services:
       - --path.rootfs=/host
     pid: host
     volumes:
-      - /:/host:ro
+      - /:/host:ro # bla rslave 7it docker desktop ma kaysupportihach
     networks: [monitoring]
     logging: *default-logging
 
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:v0.49.1
     restart: unless-stopped
-    privileged: true
+    privileged: true # cadvisor khaso ychof cgroups dyal la machine
     devices:
       - /dev/kmsg
     volumes:

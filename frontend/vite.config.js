@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-// En dev (`npm run dev`), /api et /health sont proxifiés vers le backend local.
+// f dev (npm run dev) kandouzo /api w /health l backend li khdam f local
 export default defineConfig({
   plugins: [react()],
   server: {

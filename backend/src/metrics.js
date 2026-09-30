@@ -1,6 +1,7 @@
 const client = require('prom-client');
 
 const register = new client.Registry();
+// metrics dyal node (cpu, memoire, event loop...) b prefix dyalna
 client.collectDefaultMetrics({ register, prefix: 'tython_backend_' });
 
 const httpRequestDuration = new client.Histogram({
@@ -11,6 +12,7 @@ const httpRequestDuration = new client.Histogram({
   registers: [register],
 });
 
+// kan7sbo l wa9t dyal kol request. kanst3mlo route machi url bach ma ytl3ch l cardinality
 const metricsMiddleware = (req, res, next) => {
   const end = httpRequestDuration.startTimer();
   res.on('finish', () => {

@@ -1,5 +1,5 @@
-# Image PostgreSQL de l'application : image officielle + schéma initial embarqué.
-# Les identifiants sont fournis à l'exécution via les variables POSTGRES_* (jamais dans l'image).
+# image officielle dyal postgres + schema dyalna
+# user/password kaytdkhlo f runtime b POSTGRES_* (ma kaynch chi secret f l image)
 FROM postgres:16-alpine
 COPY init.sql /docker-entrypoint-initdb.d/01-init.sql
 

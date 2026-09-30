@@ -1,7 +1,8 @@
-# Environnement local : build des images depuis les sources.
+# compose dyal local : kaybuildi les images mn l code
 #   cp .env.example .env && docker compose up -d --build
-# Seul le frontend est publié sur l'hôte ; le backend et la base restent sur le réseau interne.
+# ghir frontend li m7lol 3la la machine, backend w db b9aw f reseau dakhli
 
+# rotation dyal logs bach ma y3mrch disque
 x-logging: &default-logging
   driver: json-file
   options:
@@ -14,9 +15,9 @@ services:
     image: tython-db:local
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB manquant dans .env}
-      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER manquant dans .env}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD manquant dans .env}
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB makaynch f .env}
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER makaynch f .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD makaynch f .env}
     volumes:
       - db-data:/var/lib/postgresql/data
     networks: [backend]
@@ -29,7 +30,7 @@ services:
         APP_VERSION: ${APP_VERSION:-local}
     image: tython-backend:local
     restart: unless-stopped
-    # Seules les variables nécessaires sont transmises (pas tout le .env).
+    # kan3tiw l backend ghir les variables li mhtajhom, machi .env kaml
     environment:
       NODE_ENV: ${NODE_ENV:-production}
       APP_VERSION: ${APP_VERSION:-local}
@@ -62,4 +63,4 @@ volumes:
 networks:
   frontend:
   backend:
-    internal: true
+    internal: true # db ma kat9dch tkhrj l internet w ta 7ad ma ywslha mn bra

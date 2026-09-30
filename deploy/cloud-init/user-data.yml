@@ -1,13 +1,14 @@
 #cloud-config
-# Bootstrap de la VM Proxmox (Debian 12 / Ubuntu 24.04 cloud image).
-# Utilisé comme "cicustom" snippet par deploy/proxmox/create-vm.sh.
-# Remplacer la clé SSH ci-dessous par la clé publique de déploiement.
+# bootstrap dyal la VM f Proxmox (Debian 12 / Ubuntu 24.04 cloud image)
+# create-vm.sh kay7tou f snippets w kaydirou cicustom
+# !! bdel l cle ssh lta7t b cle publique dyalk
 
 hostname: tython-app
-timezone: Europe/Paris
+timezone: Africa/Casablanca
 package_update: true
 package_upgrade: true
 
+# groupe docker mazal ma kaynch hna, kanzidouh f runcmd mn b3d ma ytsala docker
 users:
   - name: deploy
     groups: [sudo]
@@ -26,14 +27,14 @@ packages:
   - qemu-guest-agent
 
 write_files:
-  # Durcissement SSH : clé uniquement, pas de root.
+  # ssh : ghir b cle, root mamnou3
   - path: /etc/ssh/sshd_config.d/99-hardening.conf
     content: |
       PermitRootLogin no
       PasswordAuthentication no
       KbdInteractiveAuthentication no
       MaxAuthTries 3
-  # Rotation des logs Docker au niveau du démon (défaut pour tous les conteneurs).
+  # rotation dyal logs docker par defaut l ga3 les conteneurs
   - path: /etc/docker/daemon.json
     content: |
       {
@@ -43,12 +44,12 @@ write_files:
       }
 
 runcmd:
-  # Docker Engine + plugin compose depuis le dépôt officiel.
+  # docker + compose mn repo officiel
   - curl -fsSL https://get.docker.com | sh
   - usermod -aG docker deploy
   - systemctl enable --now docker qemu-guest-agent
-  # Pare-feu : SSH + HTTP/HTTPS uniquement.
-  # NB : Docker contourne UFW pour les ports publiés — d'où des ports DB/backend non publiés.
+  # firewall : ssh + http/https w safi
+  # rd lbal : docker kaydouz 3la ufw f les ports publiés, 3lach db/backend ma publiyinch
   - ufw default deny incoming
   - ufw default allow outgoing
   - ufw allow 22/tcp
@@ -59,4 +60,4 @@ runcmd:
   - mkdir -p /opt/tython && chown deploy:deploy /opt/tython
   - systemctl restart ssh
 
-final_message: 'Tython VM prête après $UPTIME secondes'
+final_message: 'VM dyal tython wajda mn b3d $UPTIME secondes'

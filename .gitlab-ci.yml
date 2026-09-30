@@ -1,5 +1,5 @@
-# Pipeline GitLab (bonus) : exécuté sur le miroir GitLab, en complément de GitHub Actions.
-# Même logique que la CI GitHub : lint -> test -> build -> image Docker (registry GitLab).
+# pipeline GitLab (bonus) : kaykhdem 3la miroir, zyada 3la GitHub Actions
+# nfs logique : lint -> test -> build -> image docker (registry dyal GitLab)
 
 stages: [lint, test, build, package]
 
@@ -13,6 +13,7 @@ workflow:
     - if: $CI_COMMIT_BRANCH == 'main' || $CI_COMMIT_BRANCH == 'dev'
     - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
 
+# template m9ssom bin backend w frontend
 .node-app:
   before_script:
     - cd "$APP"

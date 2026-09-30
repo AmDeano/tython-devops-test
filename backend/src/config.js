@@ -1,4 +1,4 @@
-// Toute la configuration vient des variables d'environnement : aucun secret n'est codé en dur.
+// kolchi kayji mn les variables d'env, ma kayn 7ta secret mktoub f l code
 const required = (name) => {
   const value = process.env[name];
   if (!value) {
@@ -7,6 +7,7 @@ const required = (name) => {
   return value;
 };
 
+// lazy : ma kan9raw config dyal db 7ta n7tajoha (bach tests ykhdmo bla postgres)
 const loadDbConfig = () => ({
   host: process.env.POSTGRES_HOST || 'db',
   port: Number(process.env.POSTGRES_PORT || 5432),
