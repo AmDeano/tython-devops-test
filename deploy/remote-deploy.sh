@@ -17,6 +17,17 @@ COMPOSE=(docker compose --env-file .env -f docker-compose.prod.yml)
 # version li khdama daba, bach nrj3o liha ila tra chi mouchkil
 PREVIOUS_TAG="$(cat .deployed_tag 2>/dev/null || echo '')"
 
+# nginx ma kaytl3ch bla certificat : ila mazal ma kaynch, ndiro wa7ed auto-signé
+# (f lab bla domaine public kayb9a hwa, w f prod init-letsencrypt.sh kaybdlo b dyal let's encrypt)
+ensure_cert() {
+  local domain live
+  domain="$(grep -E '^DOMAIN=' .env | cut -d= -f2-)"
+  live="/etc/letsencrypt/live/${domain:?DOMAIN makaynch f .env}"
+  "${COMPOSE[@]}" run --rm --no-deps --entrypoint sh certbot -c "
+    [ -f $live/fullchain.pem ] || { mkdir -p $live && openssl req -x509 -nodes -newkey rsa:2048 -days 365 \
+      -keyout $live/privkey.pem -out $live/fullchain.pem -subj /CN=$domain && echo '==> certificat auto-signé tcrea'; }"
+}
+
 deploy_tag() {
   export IMAGE_TAG="$1"
   echo "==> pull dyal les images (tag $IMAGE_TAG)"
@@ -25,6 +36,8 @@ deploy_tag() {
   # --wait : kaytsna 7ta ykono ga3 les healthchecks khdrin (db, backend, frontend, proxy)
   "${COMPOSE[@]}" up -d --remove-orphans --wait --wait-timeout 180 || return 1
 }
+
+ensure_cert
 
 if deploy_tag "$IMAGE_TAG"; then
   echo "$IMAGE_TAG" > .deployed_tag

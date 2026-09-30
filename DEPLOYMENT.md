@@ -5,6 +5,7 @@ Méthode retenue : **Option C (cloud-init) pour provisionner la VM + Option A (S
 | Étape | Outil | Fichier |
 | --- | --- | --- |
 | Créer la VM | Proxmox `qm` + template cloud-init | `deploy/proxmox/create-vm.sh` |
+| *ou* créer un LXC (lab sans KVM) | Proxmox `pct` | `deploy/proxmox/create-lxc.sh` |
 | Bootstrap VM (Docker, user, pare-feu) | cloud-init | `deploy/cloud-init/user-data.yml` |
 | Déployer une version | SSH + `docker compose` | `deploy/deploy.sh` → `deploy/remote-deploy.sh` |
 | HTTPS | Let's Encrypt (certbot) | `deploy/init-letsencrypt.sh` |
@@ -13,6 +14,17 @@ Méthode retenue : **Option C (cloud-init) pour provisionner la VM + Option A (S
 **Pourquoi ce choix ?** Une VM (plutôt qu'un LXC) isole complètement le noyau et évite les réglages `nesting/keyctl` nécessaires à Docker en LXC non privilégié. cloud-init rend la VM reproductible (détruire/recréer en 3 min). SSH + Compose reste simple, lisible et sans agent ; Ansible serait le prochain pas pour gérer plusieurs VM.
 
 Environnements : **staging** (branche `dev`) et **production** (branche `main`), sur deux VM identiques (ou la même VM avec deux `DEPLOY_DIR`/domaines).
+
+### Variante lab : Proxmox imbriqué dans VMware (LXC)
+
+Pour la démonstration, Proxmox VE tourne lui-même dans une VM VMware Workstation. Sous Windows avec Docker Desktop/WSL2 (Hyper-V actif), VMware ne peut pas exposer VT-x au Proxmox imbriqué : les VM KVM sont impossibles, mais les **conteneurs LXC** fonctionnent (pas besoin de virtualisation matérielle). On déploie donc dans un LXC Debian 12 non privilégié avec `nesting=1,keyctl=1` pour Docker :
+
+```bash
+# sur le nœud Proxmox
+CTID=120 IP=192.168.x.60/24 GW=192.168.x.2 SSH_PUBKEY=/root/tython_deploy.pub ./deploy/proxmox/create-lxc.sh
+```
+
+Sans domaine public, `remote-deploy.sh` génère automatiquement un **certificat auto-signé** : HTTPS, HSTS, headers et rate limit sont actifs, seul le certificat n'est pas reconnu par le navigateur. Le runner GitHub ne pouvant pas joindre ce réseau privé, le déploiement se lance depuis le poste (`deploy.sh`) ou via un *self-hosted runner*.
 
 ---
 
@@ -88,8 +100,8 @@ cp ~/.ssh/tython_deploy ~/.ssh/id_deploy        # deploy.sh utilise ~/.ssh/id_de
 # Si les packages GHCR sont privés : token GitHub avec le scope read:packages
 export GHCR_USER=AmDeano GHCR_TOKEN=<token>
 
-IMAGE_TAG=latest ./deploy/deploy.sh             # copie compose/nginx/monitoring, pull, up --wait
-ssh deploy@$SSH_HOST 'cd /opt/tython && bash deploy/init-letsencrypt.sh'   # 1ʳᵉ fois : certificat HTTPS
+IMAGE_TAG=latest ./deploy/deploy.sh             # copie compose/nginx/monitoring, cert auto-signé si absent, pull, up --wait
+ssh deploy@$SSH_HOST 'cd /opt/tython && bash deploy/init-letsencrypt.sh'   # avec domaine public : remplace par Let's Encrypt
 ```
 
 Tester d'abord Let's Encrypt en mode test : `STAGING=1 bash deploy/init-letsencrypt.sh`.
@@ -98,6 +110,7 @@ Tester d'abord Let's Encrypt en mode test : `STAGING=1 bash deploy/init-letsencr
 1. envoie via `tar | ssh` les fichiers d'infra (`docker-compose.prod.yml`, `docker-compose.monitoring.yml`, `nginx/`, `monitoring/`, `deploy/remote-deploy.sh`) dans `/opt/tython` ;
 2. `docker login ghcr.io` si un token est fourni ;
 3. lance `remote-deploy.sh` sur la VM, qui :
+   - crée un certificat auto-signé si aucun n'existe (nginx ne démarre pas sans) ;
    - `docker compose pull` du tag demandé ;
    - `docker compose up -d --remove-orphans --wait` (redémarre uniquement ce qui change, attend que **tous les healthchecks** soient verts) ;
    - en cas d'échec : affiche les logs et **rollback automatique** vers le tag précédent (`.deployed_tag`) ;
